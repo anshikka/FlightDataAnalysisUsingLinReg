@@ -1,0 +1,207 @@
+---
+title: "INET4061Lab4"
+author: "Ansh Sikka"
+date: "2/19/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(MASS)
+library(ISLR)
+```
+
+---
+
+## Overview
+
+In this lab, we created a multiple regression models (polynomial and linear) to interpret useful results from the Boston dataset. 
+
+## Data
+
+The data is build into the MASS package. The dataset is the Boston dataset which shows the [CRIM] crime rate based on:
+
+* CRIM - per capita crime rate by town
+* ZN - proportion of residential land zoned for lots over 25,000 sq.ft.
+* INDUS - proportion of non-retail business acres per town.
+* CHAS - Charles River dummy variable (1 if tract bounds river; 0 otherwise)
+* NOX - nitric oxides concentration (parts per 10 million)
+* RM - average number of rooms per dwelling
+* AGE - proportion of owner-occupied units built prior to 1940
+* DIS - weighted distances to five Boston employment centres
+* RAD - index of accessibility to radial highways
+* TAX - full-value property-tax rate per $10,000
+* PTRATIO - pupil-teacher ratio by town
+* B - 1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town
+* LSTAT - % lower status of the population
+* MEDV - Median value of owner-occupied homes in $1000's
+
+The dataset is shown below:
+
+```{r sleep dataset preview}
+data(Boston)
+head(Boston)
+```
+
+```{r get names}
+names(Boston)
+```
+
+## Exploratory Data Analysis and Improvement of Models 
+This will initialize the libraries needed: MASS for the Boston dataset itself and ISLR for regression. 
+
+### Simple Linear Regression
+In this, I simply only did a linear regression model with medv as the response variable and lstat as the input variable. The plot and statistical summary is shown below. 
+```{r simple linear regression}
+
+# properly check if the dataset is clean to put into our mode
+fix(Boston) 
+
+# get column names
+names(Boston)
+
+plot(medv~lstat, Boston)
+
+# fit the model for % lower status of population vs. median value of home  (fit 1)
+attach(Boston)
+fit1=lm(medv~lstat)
+fit1
+
+# get the regression statistics of the first fit
+summary(fit1)
+
+# plot the model
+abline(fit1, col="red")
+
+# get the available statistics from the current fitted model
+names(fit1)
+
+# get the weights or coefficients for each column
+coef(fit1)
+
+# compute the confidence interval for fit1 (95%)
+confint(fit1)
+
+# predict the results of mdev from a given lstat
+prediction1 = predict(fit1,data.frame(lstat=(c(5,10,15))), interval="prediction")
+summary(prediction1)
+```
+##### Interpretation
+Since we only had one input variable (lstat) in this, it yielded decent results. The R-squared value was 0.5441 which means that there was a fair amount of variance between the variables. We can improve this by adding multiple features (multiple linear regression) and getting a more fair fit that takes in consideration more variables. 
+
+#### Multiple Linear Regression
+
+##### With lstat and age as input variables
+```{r multiple linear regression}
+# fit model with medv as response variable with lstat and age as input
+fit2=lm(medv~lstat+age,data=Boston)
+plot(fit2)
+summary(fit2)
+```
+###### Interpretation
+This R-squared is a little better, according to the residual plot, the fit seems a little more fitted. However, we can improve this by adding more variables as input variables. 
+##### With everything as an input variable
+```{r multiple regression with every variable}
+# fit model with medv as response variable with everything else as response
+fit3=lm(medv~.,data=Boston)
+summary(fit3)
+plot(fit3)
+```
+###### Interpretation
+Look at that! The R-squared is significantly higher here since we are taking in consideration all variables. That means that the data is very close to our regression line. However, there is still room for improvement. We can fix this by removing the objects that have low t-values (collinearity). 
+##### With verything as an input variable except age and indus
+```{r multiple regression with every variable except age and indus}
+# remove age and indus and refit
+fit4=update(fit3, ~.-age-indus)
+summary(fit4)
+plot(fit4)
+```
+###### Interpretation
+The R-squared value has gotten slightly better. At the end, we got a decent r-squared value after taking in consideration most variables and remove variables that are causing high collinearity.
+
+
+##### With Everything As An Input Variable Except: age, indus, tax, and black
+```{r multiple regression with every variable except age, indus, tax, and black}
+# remove age, indus, tax, and black
+fit5=update(fit3, ~.-age-indus-tax-black)
+summary(fit5)
+plot(fit5)
+```
+###### Interpretation
+This time, the model DID NOT improve. This shows that every little variable counts as it constributes in producing a response variable. Let's try fixing this with polynomial terms.
+
+#### Polynomial Term-Based
+##### Interaction Between lstat and age
+``` {r regression polynomial}
+# interaction between lstat and age
+fit5=lm(medv~lstat*age, Boston)
+summary(fit5)
+```
+###### Interpretation
+This did have a slightly better R-squared than fit1. However, this also means that adding these interactions didn't suffice to better fit the plot. 
+
+##### Quadratic Fit with lstat being squared
+
+```{r}
+# fit with lstat being quadratic 
+fit6=lm(medv~lstat +I(lstat^2), Boston);
+summary(fit6)
+```
+###### Interpretation
+As seen in previous plots, the lstat variable caused the plotted points to go up in a quadratic matter (x^2). Fitting this did in fact yield a higher r-squared, making it match the regression line more. 
+
+### Qualitative Prediction
+```{r qualitative prediction}
+# view dataframe for car datset 
+fix(Carseats)
+names(Carseats)
+summary(Carseats)
+```
+For this, we will create two fits:
+* One without any interactions
+* One with interactions
+
+### Multiple Linear Regression
+
+#### Multiple Linear Regression Without Interactions
+
+##### Comparing Income, Advertising, Price, and Age Seperately
+```{r car linear regression: no interactions}
+carfit1 = lm(Sales~., data=Carseats)
+summary(carfit1)
+plot(carfit1)
+```
+
+###### Interpretation
+Here, the R-Squared value is already high, meaning there is strong correlation between these variables. However, this model can be improved with adding interactions between the variables. We will test this with interactions between incom, advertising, price, and age
+
+##### Comparing Income, Advertising and Price, and Age, 
+```{r car linear regression: with interactions}
+carfit1 = lm(Sales~.+++Income:Price:Advertising:Age, data=Carseats)
+summary(carfit1)
+plot(carfit1)
+```
+###### Interpretation
+In this, we can see that the r-squared value slightly increased with interactions being added. These 4 variables (income, advertising, price, age) all have a decent linear relationship that bring it closer to the regression line. 
+
+## Conclusions
+
+This notebook demonstrates example RMarkdown Code to
+
+* Use linear regression between an input and response variable to extract useful data and make predictions
+* Use multiple linear regression between multiple input and one response variable to extract useful data and make predictions
+* Use polynomials in the linear regression to further fit the data more properly on curved plots
+* Use interactions to create a more accurate representation of the relationship between variables 
+
+Using two datasets Boston Housing and the Carseat dataset, linear regression was performed on response variables with 1 or more input variables. The models were constantly improved by adding multiple regression, polynomials, and interactions. The most significant changes came from
+
+* Multiple Linear Regression
+* Polynomials
+
+The least significant changes (but improvements nevertheless) came from
+* Interactions
+* Removing insignificant variables with small coefficients
+
+Overall, the models did improve over each tweak to the module. The best thing to do is look at the graph and tweak the module until the linear regression line matches well with the plot with a high R-squared value. 
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
